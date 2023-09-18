@@ -18,10 +18,12 @@ const CorsResponse = (body: any, options?: ResponseInit) => {
 };
 
 Bun.serve({
-  port: 1338,
+  port: 1339,
   fetch: async (req) => {
     const { searchParams } = new URL(req.url);
     const url = searchParams.get("url");
+
+    console.log("New request");
 
     if (!url) return CorsResponse("No url has been given", { status: 400 });
     if (!ytRegex.test(url)) return CorsResponse("Bad yt link", { status: 400 });
