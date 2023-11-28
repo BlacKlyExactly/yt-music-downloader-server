@@ -1,3 +1,4 @@
+import { error } from "console";
 import { getInfo } from "ytdl-core";
 
 console.log("Starting ytdl server...");
@@ -48,8 +49,9 @@ Bun.serve({
           name: info.videoDetails.title,
         })
       );
-    } catch {
-      return CorsResponse("ytdl-core error", { status: 400 });
+    } catch (e) {
+      console.error(e);
+      return CorsResponse(e, { status: 400 });
     }
   },
 });
