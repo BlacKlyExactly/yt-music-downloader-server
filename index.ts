@@ -1,57 +1,35 @@
-import { error } from "console";
-import { getInfo } from "ytdl-core";
+import express from "express";
+import ytdl from "ytdl-core";
+import cors from "cors";
+import dotenv from "dotenv";
+import crypto from "crypto";
 
-console.log("Starting ytdl server...");
+dotenv.config();
 
-const ytRegex =
-  /http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?/;
+const PORT = process.env.PORT || "1339";
 
-const CorsResponse = (body: any, options?: ResponseInit) => {
-  const res = new Response(body, options);
+const app = express();
 
-  res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS"
-  );
+app.use(express.json());
+app.use(cors());
 
-  return res;
-};
+app.get("/", (req, res) => {
+  const { url } = req.query;
 
-Bun.serve({
-  port: 1339,
-  fetch: async (req) => {
-    const { searchParams } = new URL(req.url);
-    const url = searchParams.get("url");
+  const name = crypto.randomBytes(3).toString("hex");
 
-    console.log("New request");
+  if (!url) return res.status(400).send({ error: "No url" });
 
-    if (!url) return CorsResponse("No url has been given", { status: 400 });
-    if (!ytRegex.test(url)) return CorsResponse("Bad yt link", { status: 400 });
+  res.header("Content-Disposition", `attachment; filename="${name}.mp3"`);
 
-    try {
-      const info = await getInfo(url, {
-        requestOptions: {
-          headers: {
-            cookie: Bun.env.YT_COOKIES,
-            "x-youtube-identity-token": Bun.env.YT_TOKEN,
-          },
-        },
-      });
-
-      const videoInfo = info.formats.filter(
-        ({ audioQuality }) => audioQuality
-      )[0];
-
-      return CorsResponse(
-        JSON.stringify({
-          url: videoInfo.url,
-          name: info.videoDetails.title,
-        })
-      );
-    } catch (e) {
-      console.error(e);
-      return CorsResponse(e, { status: 400 });
-    }
-  },
+  ytdl(url as string, {
+    filter: "audioonly",
+    requestOptions: {
+      headers: {
+        "x-youtube-identity-token": process.env.YT_TOKEN,
+      },
+    },
+  }).pipe(res);
 });
+
+app.listen(PORT, () => console.log(`Listening on port: ${PORT}`));
