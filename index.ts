@@ -13,12 +13,26 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.get("/", (req, res) => {
+const getVideoTitle = async (url: string) => {
+  try {
+    const {
+      videoDetails: { title },
+    } = await ytdl.getBasicInfo(url as string);
+
+    return title;
+  } catch {
+    return;
+  }
+};
+
+app.get("/", async (req, res) => {
   const { url } = req.query;
 
-  const name = crypto.randomBytes(3).toString("hex");
-
   if (!url) return res.status(400).send({ error: "No url" });
+
+  const name =
+    (await getVideoTitle(url as string)) ||
+    crypto.randomBytes(3).toString("hex");
 
   res.header("Content-Disposition", `attachment; filename="${name}.mp3"`);
 
